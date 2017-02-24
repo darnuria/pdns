@@ -38,7 +38,7 @@ NSEC3 instead, issue:
 
 .. code-block:: shell
 
-    pdnsutil set-nsec3 ZONE [PARAMETERS] ['narrow']
+    pdnsutil set-nsec3 ZONE [PARAMETERS] ['narrow' ['axfr']]
 
 e.g.
 
@@ -59,6 +59,20 @@ The quoted part is the content of the NSEC3PARAM records, as defined in
 
 Optionally, NSEC3 can be set to 'narrow' mode. For more information refer
 to :ref:`dnssec-nsec-modes`.
+
+To enable NSEC3 narrow mode on a zone:
+
+::
+
+    pdnsutil set-nsec3 example.net '1 0 1 ab' narrow
+
+To allow AXFR on a zone running in NSEC3 narrow mode:
+
+::
+
+    pdnsutil set-nsec3 example.net '1 0 1 ab' narrow axfr
+
+**Note**: The AXFR zone will be full-width.
 
 To convert a zone from NSEC3 to NSEC operations, run:
 

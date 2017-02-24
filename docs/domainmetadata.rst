@@ -106,6 +106,13 @@ Or in SQL:
     insert into domainmetadata (domain_id, kind, content) values (7,'ALSO-NOTIFY','192.0.2.1:5300');
     insert into domainmetadata (domain_id, kind, content) values (7,'ALLOW-AXFR-FROM','2001:db8:53::1');
 
+AXFR-NSEC3NARROW
+----------------
+
+Set to "1" to tell PowerDNS to allow AXFR if zone is running in NSEC3 'narrow' mode.
+In such case, the AXFR reply will have full-width NSEC3 records. See
+:ref:`dnssec-operational-nsec-modes-params`
+
 AXFR-MASTER-TSIG
 ----------------
 

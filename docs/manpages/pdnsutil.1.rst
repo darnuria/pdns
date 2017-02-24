@@ -87,7 +87,7 @@ publish-zone-key *ZONE* *KEY-ID*
     Publish the key with id *KEY-ID* within a zone called *ZONE*.
 remove-zone-key *ZONE* *KEY-ID*
     Remove a key with id *KEY-ID* from a zone called *ZONE*.
-set-nsec3 *ZONE* ['*HASH-ALGORITHM* *FLAGS* *ITERATIONS* *SALT*'] [**narrow**]
+set-nsec3 *ZONE* ['*HASH-ALGORITHM* *FLAGS* *ITERATIONS* *SALT*'] [**narrow** [**axfr**]]
     Sets NSEC3 parameters for this zone. The quoted parameters are 4
     values that are used for the the NSEC3PARAM record and decide how
     NSEC3 records are created. The NSEC3 parameters must be quoted on
@@ -105,6 +105,10 @@ set-nsec3 *ZONE* ['*HASH-ALGORITHM* *FLAGS* *ITERATIONS* *SALT*'] [**narrow**]
     zone transfers are denied. If only the zone is provided as argument,
     the 4-parameter quoted string defaults to ``'1 0 1 ab'``. A sample
     commandline is: ``pdnsutil set-nsec3 powerdnssec.org '1 1 1 ab' narrow``.
+    Setting **axfr** will make PowerDNS reply to AXFR on the zone with
+    full-width nsec3 records while replying with narrow records itself.
+    A sample commandline is:
+    "pdnsutil set-nsec3 powerdnssec.org '1 1 1 ab' narrow axfr".
     **WARNING**: If running in RSASHA1 mode (algorithm 5 or 7), switching
     from NSEC to NSEC3 will require a DS update in the parent zone.
 unpublish-zone-key *ZONE* *KEY-ID*
