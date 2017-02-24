@@ -603,9 +603,18 @@ int TCPNameserver::doAXFR(const DNSName &target, std::unique_ptr<DNSPacket>& q, 
 
   NSEC3PARAMRecordContent ns3pr;
   bool narrow;
+  bool narrowAxfr;
   bool NSEC3Zone=false;
-  if(securedZone && dk.getNSEC3PARAM(target, &ns3pr, &narrow)) {
+  if(securedZone && dk.getNSEC3PARAM(target, &ns3pr, &narrow, &narrowAxfr)) {
     NSEC3Zone=true;
+    if (narrow && !narrowAxfr) {
+      g_log<<Logger::Error<<"Not doing AXFR of an NSEC3 narrow zone '"<<target<<"' for "<<q->getRemote()<<endl;
+
+      outpacket->setRcode(RCode::Refused);
+      // FIXME: should actually figure out if we are auth over a zone, and send out 9 if we aren't
+      sendPacket(outpacket,outsock);
+      return 0;
+    }
   }
 
   TSIGRecordContent trc;

@@ -286,7 +286,7 @@ uint64_t DNSSECKeeper::dbdnssecCacheSizes(const std::string& str)
   return (uint64_t)-1;
 }
 
-bool DNSSECKeeper::getNSEC3PARAM(const DNSName& zname, NSEC3PARAMRecordContent* ns3p, bool* narrow)
+bool DNSSECKeeper::getNSEC3PARAM(const DNSName& zname, NSEC3PARAMRecordContent* ns3p, bool* narrow, bool* axfr)
 {
   string value;
   getFromMeta(zname, "NSEC3PARAM", value);
@@ -309,6 +309,10 @@ bool DNSSECKeeper::getNSEC3PARAM(const DNSName& zname, NSEC3PARAMRecordContent* 
   if(narrow) {
     getFromMeta(zname, "NSEC3NARROW", value);
     *narrow = (value=="1");
+    if (axfr) {
+      getFromMeta(zname, "AXFR-NSEC3NARROW", value);
+      *axfr = (value=="1");
+    }
   }
   return true;
 }
@@ -339,7 +343,7 @@ bool DNSSECKeeper::checkNSEC3PARAM(const NSEC3PARAMRecordContent& ns3p, string& 
   return ret;
 }
 
-bool DNSSECKeeper::setNSEC3PARAM(const DNSName& zname, const NSEC3PARAMRecordContent& ns3p, const bool& narrow)
+bool DNSSECKeeper::setNSEC3PARAM(const DNSName& zname, const NSEC3PARAMRecordContent& ns3p, const bool& narrow, const bool& axfr)
 {
   string error_msg = "";
   if (!checkNSEC3PARAM(ns3p, error_msg))
@@ -351,11 +355,17 @@ bool DNSSECKeeper::setNSEC3PARAM(const DNSName& zname, const NSEC3PARAMRecordCon
   meta.push_back(descr);
   if (d_keymetadb->setDomainMetadata(zname, "NSEC3PARAM", meta)) {
     meta.clear();
-    
+
     if(narrow)
       meta.push_back("1");
-    
-    return d_keymetadb->setDomainMetadata(zname, "NSEC3NARROW", meta);
+
+    if (d_keymetadb->setDomainMetadata(zname, "NSEC3NARROW", meta)) {
+      meta.clear();
+      if(axfr)
+        meta.push_back("1");
+
+      return d_keymetadb->setDomainMetadata(zname, "AXFR-NSEC3NARROW", meta);
+    }
   }
   return false;
 }
