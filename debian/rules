@@ -1,0 +1,114 @@
+#!/usr/bin/make -f
+DEB_HOST_ARCH_OS ?= $(shell dpkg-architecture -qDEB_HOST_ARCH_OS)
+DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
+
+# Vendor and version
+version := $(shell dpkg-parsechangelog -SVersion).$(shell dpkg-vendor --query Vendor)
+CXXFLAGS += -DPACKAGEVERSION='"$(version)"'
+
+# Backends
+backends := bind ldap pipe gmysql godbc gpgsql gsqlite3 geoip lua mydns remote random opendbx tinydns dlso
+
+# Disable systemd integration on non-linux archs
+ifeq ($(DEB_HOST_ARCH_OS),linux)
+CONFIGURE_ARGS += --enable-systemd --with-systemd=/lib/systemd/system --disable-lua-records
+else
+CONFIGURE_ARGS += --disable-systemd
+endif
+
+CONFIGURE_ARGS += --with-protobuf=yes
+DNSDIST_CONFIGURE_ARGS += --enable-re2 --enable-libsodium --enable-dnscrypt --with-luajit --with-net-snmp
+
+# Use new build system
+%:
+	dh $@ \
+	  --with autoreconf \
+	  --with systemd \
+	  --parallel
+
+override_dh_auto_install:
+	dh_auto_install \
+	  -pdnsdist \
+	  -Dpdns/dnsdistdist
+	dh_auto_install \
+	  --remaining-packages
+
+override_dh_autoreconf:
+	dh_autoreconf --as-needed\
+	  -Ndnsdist
+	cd pdns/dnsdistdist/; autoreconf -vi
+
+override_dh_auto_configure:
+	test -f pdns/dnslabeltext.cc && mv pdns/dnslabeltext.cc debian/dnslabeltext.cc.moved || true
+	dh_auto_configure -Ndnsdist -- \
+		--sysconfdir=/etc/powerdns \
+		--with-dynmodules="$(backends)" \
+		--with-modules="" \
+		--with-pgsql-includes=`pg_config --includedir` \
+		--enable-botan1.10 \
+		--enable-tools \
+		--enable-unit-tests \
+		--enable-reproducible \
+		$(CONFIGURE_ARGS)
+	dh_auto_configure -pdnsdist -Dpdns/dnsdistdist/ -- \
+		--sysconfdir=/etc/dnsdist \
+		--enable-unit-tests \
+		--enable-reproducible \
+		$(CONFIGURE_ARGS) $(DNSDIST_CONFIGURE_ARGS)
+
+override_dh_systemd_enable:
+	dh_systemd_enable --name=pdns
+
+# init script needs to be named pdns, not pdns-server. if no pdns-backend
+# is installed, start will fail, so pass --no-start. backends will trigger
+# a restart.
+override_dh_installinit:
+	dh_installinit --error-handler=initscript_error --no-start --restart-after-upgrade --name=pdns
+
+override_dh_install:
+	dh_install
+	./pdns/pdns_server --no-config --config | sed \
+	  -e 's!# module-dir=.*!!' \
+	  -e 's!# include-dir=.*!&\ninclude-dir=/etc/powerdns/pdns.d!' \
+	  -e 's!# launch=.*!&\nlaunch=!' \
+	  -e 's!# setgid=.*!setgid=pdns!' \
+	  -e 's!# setuid=.*!setuid=pdns!' \
+	  -e 's!# security-poll-suffix=.*!&\nsecurity-poll-suffix=!' \
+	  > debian/pdns-server/etc/powerdns/pdns.conf
+
+# Verbose tests (shows used compiler/linker and their flags)
+override_dh_auto_test:
+	echo Skipping make test, as dependencies are missing.
+	#dh_auto_test
+
+override_dh_fixperms:
+	dh_fixperms
+	# these files often contain passwords.
+	chmod 0600 debian/pdns-server/etc/powerdns/pdns.conf
+
+# restore moved files
+override_dh_clean:
+	test -f debian/dnslabeltext.cc.moved && mv debian/dnslabeltext.cc.moved pdns/dnslabeltext.cc || true
+	dh_clean
+	rm -rf docs/mans/.doctrees docs/.venv
+
+override_dh_strip:
+	dh_strip -p pdns-server          --dbg-package=pdns-server-dbg
+	dh_strip -p pdns-tools           --dbg-package=pdns-tools-dbg
+	dh_strip -p pdns-backend-bind    --dbg-package=pdns-backend-bind-dbg
+	dh_strip -p pdns-backend-pipe    --dbg-package=pdns-backend-pipe-dbg
+	dh_strip -p pdns-backend-ldap    --dbg-package=pdns-backend-ldap-dbg
+	dh_strip -p pdns-backend-geoip   --dbg-package=pdns-backend-geoip-dbg
+	dh_strip -p pdns-backend-mysql   --dbg-package=pdns-backend-mysql-dbg
+	dh_strip -p pdns-backend-odbc    --dbg-package=pdns-backend-odbc-dbg
+	dh_strip -p pdns-backend-pgsql   --dbg-package=pdns-backend-pgsql-dbg
+	dh_strip -p pdns-backend-sqlite3 --dbg-package=pdns-backend-sqlite3-dbg
+	dh_strip -p pdns-backend-lua     --dbg-package=pdns-backend-lua-dbg
+	dh_strip -p pdns-backend-remote  --dbg-package=pdns-backend-remote-dbg
+	dh_strip -p pdns-backend-opendbx --dbg-package=pdns-backend-opendbx-dbg
+	dh_strip -p pdns-backend-mydns   --dbg-package=pdns-backend-mydns-dbg
+	dh_strip -p pdns-backend-tinydns --dbg-package=pdns-backend-tinydns-dbg
+	dh_strip -p pdns-backend-dlso    --dbg-package=pdns-backend-dlso-dbg
+	dh_strip -p pdns-dnsdist         --dbg-package=pdns-dnsdist-dbg
+
+

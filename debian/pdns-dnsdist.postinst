@@ -1,0 +1,41 @@
+#!/bin/sh
+set -e
+
+if [ -n "$PDNSDEBUG" ]; then
+  echo "now debugging $0 $@"
+  set -x
+fi
+
+# Startup errors should never cause dpkg to fail.
+initscript_error() {
+    return 0
+}
+
+case "$1" in
+  configure)
+    if [ -z "`getent group _dnsdist`" ]; then
+      addgroup --quiet --system _dnsdist
+    fi
+    if [ -z "`getent passwd _dnsdist`" ]; then
+      adduser --force-badname --quiet --system --home /nonexistent --no-create-home --shell /bin/false --ingroup _dnsdist --disabled-password --disabled-login --gecos "PowerDNS dnsdist" _dnsdist
+    fi
+
+    mkdir -p /var/run/dnsdist/
+    dpkg-statoverride --remove /var/run/dnsdist/ >/dev/null 2>&1 || true
+    dpkg-statoverride --update --add _dnsdist _dnsdist 02750 /var/run/dnsdist/ >/dev/null 2>&1 || true
+
+    update-rc.d dnsdist defaults >/dev/null
+  ;;
+
+  abort-upgrade|abort-remove|abort-deconfigure)
+  ;;
+
+  *)
+    echo "postinst called with unknown argument \`$1'" >&2
+    exit 1
+  ;;
+esac
+
+#DEBHELPER#
+
+exit 0
