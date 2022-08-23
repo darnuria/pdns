@@ -370,6 +370,7 @@ void declareStats(void)
   S.declareComboRing("remotes","Remote server IP addresses");
   S.declareComboRing("remotes-unauth","Remote hosts querying domains for which we are not auth");
   S.declareComboRing("remotes-corrupt","Remote hosts sending corrupt packets");
+  S.declareComboRing("queries-recv-address", "Queries received on IP addresses");
 }
 
 int isGuarded(char **argv)
@@ -446,6 +447,7 @@ try
 
     S.ringAccount("queries", question.qdomain, question.qtype);
     S.ringAccount("remotes", question.d_remote);
+    S.ringAccount("queries-recv-address", question.getLocal());
     if(logDNSQueries) {
       string remote;
       if(question.hasEDNSSubnet()) 
