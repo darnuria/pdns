@@ -625,7 +625,7 @@ static int checkZone(DNSSECKeeper &dk, UeberBackend &B, const DNSName& zone, con
     }
   }
 
-  for(auto &i: cnames) {
+  for(const auto &i: cnames) {
     if (noncnames.find(i) != noncnames.end()) {
       cout<<"[Error] CNAME "<<i<<" found, but other records with same label exist."<<endl;
       numerrors++;
@@ -1161,7 +1161,7 @@ static int editZone(const DNSName &zone) {
   vector<DNSResourceRecord> checkrr;
   int gotoline=0;
   string editor="editor";
-  if(auto e=getenv("EDITOR")) // <3
+  if(auto *e=getenv("EDITOR")) // <3
     editor=e;
   string cmdline;
  editAgain:;
@@ -2328,7 +2328,7 @@ static int testSchema(DNSSECKeeper& dk, const DNSName& zone)
       cout<<"Expected one record, got multiple, aborting"<<endl;
       return EXIT_FAILURE;
     }
-    int size=rrget.content.size();
+    size_t size = rrget.content.size();
     if(size != 302)
     {
       cout<<"Expected 302 bytes, got "<<size<<", aborting"<<endl;
@@ -4066,7 +4066,7 @@ try
       // move keys
       nk=0;
       // temp var for KeyID
-      int64_t keyID;
+      int64_t keyID = 0;
       std::vector<DNSBackend::KeyData> keys;
       if (src->getDomainKeys(di.zone, keys)) {
         for(const DNSBackend::KeyData& k: keys) {
