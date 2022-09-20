@@ -25,7 +25,13 @@
 #include <stdint.h>
 #include <sys/socket.h>
 
-#define PDNS_DLSO_ABI_VERSION 1
+/** ABI version changelog
+  *
+  * - 2: Changed signature of callback ptr to void* instead of const void *
+  *   Added a field `published` into `struct dns_key` to follow `DnsKey` pdns own struct.
+  * - 1: Initial version.
+  */
+static const uint32_t PDNS_DLSO_ABI_VERSION = 2;
 
 struct resource_record {
   uint16_t qtype;
@@ -39,12 +45,14 @@ struct resource_record {
   bool auth;
 };
 
+/** Shall follow pdns struct DnsKey */
 struct dnskey {
   uint32_t id;
   uint16_t flags;
   uint16_t data_len;
   const char * data;
   bool active;
+  bool published;
 };
 
 struct nsec3_param {

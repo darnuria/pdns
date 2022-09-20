@@ -220,6 +220,7 @@ void fill_key_cb(const void * ptr, const struct dnskey *dnskey) {
   key.flags = dnskey->flags;
   key.active = dnskey->active;
   key.content = string(dnskey->data, dnskey->data_len);
+  key.published = dnskey->published;
   keys->push_back(key);
 }
 
@@ -252,6 +253,7 @@ bool DlsoBackend::addDomainKey(const DNSName& name, const KeyData& key, int64_t&
   dnskey.active = key.active;
   dnskey.data = key.content.c_str();
   dnskey.data_len = key.content.size();
+  dnskey.published = key.published;
 
   return api->add_domain_key(api->handle, qname.size(), qname.c_str(), &dnskey, &id);
 }

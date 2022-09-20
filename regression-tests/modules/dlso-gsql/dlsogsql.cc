@@ -242,6 +242,7 @@ bool add_domain_key(void * ptr, uint8_t qlen, const char * qname_, struct dnskey
 	key.id = dnskey->id;
 	key.flags = dnskey->flags;
 	key.active = dnskey->active;
+	key.published = dnskey->published;
 	key.content = string(dnskey->data, dnskey->data_len);
 
 	return handle->module->addDomainKey(qname, key, *id);
@@ -262,6 +263,7 @@ bool get_domain_keys(void * ptr, uint8_t qlen, const char * qname_, fill_key_cb_
 			dnskey.active = key.active;
 			dnskey.data = key.content.c_str();
 			dnskey.data_len = key.content.size();
+			dnskey.published = key.published;
 
 			cb(keys_, &dnskey);
 		}
